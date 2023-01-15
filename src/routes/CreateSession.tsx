@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { Box, Button, TextField } from "@mui/material";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
 const CreateSession: React.FC = () => {

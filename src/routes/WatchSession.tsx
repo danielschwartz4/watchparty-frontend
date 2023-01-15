@@ -5,17 +5,24 @@ import { Box, Button, TextField, Tooltip } from "@mui/material";
 import LinkIcon from "@mui/icons-material/Link";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
+import { sendMessage } from "../utils";
 
 const WatchSession: React.FC = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [url, setUrl] = useState<string | null>(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [newUrl, setNewUrl] = useState<string | null>(null);
 
   const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     // load video by session ID -- right now we just hardcode a constant video but you should be able to load the video associated with the session
     setUrl("https://www.youtube.com/watch?v=NX1eKLReSpY");
+    setNewUrl("https://www.youtube.com/watch?v=NX1eKLReSpY");
+    const newWs = new WebSocket(`ws://localhost:8080/watch/${sessionId}`);
+
+    setWs(newWs);
 
     // if session ID doesn't exist, you'll probably want to redirect back to the home / create session page
   }, [sessionId]);
@@ -31,16 +38,27 @@ const WatchSession: React.FC = () => {
           marginTop={1}
           alignItems="center"
         >
-          <TextField
-            label="Youtube URL"
-            variant="outlined"
-            value={url}
-            inputProps={{
-              readOnly: true,
-              disabled: true,
-            }}
-            fullWidth
-          />
+          <Box display={"flex"}>
+            <Box width={"500px"}>
+              <TextField
+                label="Youtube URL"
+                variant="outlined"
+                value={newUrl}
+                fullWidth
+                onChange={(e) => setNewUrl(e.target.value)}
+              />
+            </Box>
+            <Button
+              onClick={() => {
+                setUrl(newUrl);
+                if (newUrl) {
+                  sendMessage(ws, "url-change", newUrl);
+                }
+              }}
+            >
+              Change Video
+            </Button>
+          </Box>
           <Tooltip title={linkCopied ? "Link copied" : "Copy link to share"}>
             <Button
               onClick={() => {
@@ -78,7 +96,13 @@ const WatchSession: React.FC = () => {
             </Button>
           </Tooltip>
         </Box>
-        <VideoPlayer url={url} />;
+        <VideoPlayer
+          ws={ws}
+          url={url}
+          setUrl={setUrl}
+          newUrl={newUrl}
+          setNewUrl={setNewUrl}
+        />
       </>
     );
   }

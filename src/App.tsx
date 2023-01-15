@@ -1,17 +1,9 @@
-import { useState } from "react";
-import {
-  Box,
-  Button,
-  createTheme,
-  CssBaseline,
-  TextField,
-  ThemeProvider,
-  Typography,
-} from "@mui/material";
-import { Routes, Route, useNavigate } from "react-router-dom";
-import WatchSession from "./routes/WatchSession";
+import { Box, createTheme, CssBaseline, ThemeProvider } from "@mui/material";
+import { Route, Routes } from "react-router-dom";
 import CreateSession from "./routes/CreateSession";
 import ReplaySession from "./routes/ReplaySession";
+import Test from "./routes/Test";
+import WatchSession from "./routes/WatchSession";
 
 const darkTheme = createTheme({
   palette: {
@@ -35,6 +27,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<CreateSession />} />
           <Route path="/create" element={<CreateSession />} />
+          <Route path="/test" element={<Test />} />
           <Route path="/watch/:sessionId" element={<WatchSession />} />
           <Route path="/replay/:sessionId" element={<ReplaySession />} />
         </Routes>

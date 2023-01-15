@@ -1,16 +1,64 @@
-import { Box, Button, Card, IconButton, Stack } from "@mui/material";
-import React, { useRef, useState } from "react";
+import { Box, Button } from "@mui/material";
+import React, { useEffect, useRef, useState } from "react";
 import ReactPlayer from "react-player";
+import { MessagePayload, State } from "../types";
+import { sendMessage } from "../utils";
 
 interface VideoPlayerProps {
+  ws: WebSocket | null;
   url: string;
+  setUrl?: React.Dispatch<React.SetStateAction<string | null>>;
+  newUrl?: string | null;
+  setNewUrl?: React.Dispatch<React.SetStateAction<string | null>>;
   hideControls?: boolean;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, hideControls }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  ws,
+  url,
+  setUrl,
+  newUrl,
+  setNewUrl,
+  hideControls,
+}) => {
   const [hasJoined, setHasJoined] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const player = useRef<ReactPlayer>(null);
+  const player = useRef<ReactPlayer | null>(null);
+  const prevPlayerState = useRef<State | null>(null);
+
+  function messageReceipt(data: MessagePayload) {
+    console.log("in show message", data.message, data.type);
+    switch (data.type) {
+      case "seek":
+        player.current?.seekTo(parseFloat(data.message));
+        break;
+
+      case "pause":
+        setIsPlaying(data.message === "false");
+        break;
+
+      case "url-change":
+        console.log("new url", data.message);
+        if (setUrl && newUrl && setNewUrl) {
+          setUrl(data.message);
+          setNewUrl(data.message);
+        }
+        break;
+    }
+  }
+
+  useEffect(() => {
+    if (ws) {
+      ws.onmessage = ({ data }) => messageReceipt(JSON.parse(data));
+      ws.onopen = () => {
+        console.log("Connection opened!");
+      };
+      ws.onclose = () => {
+        console.log("Connection closed!");
+      };
+    }
+  }, [ws]);
 
   const handleReady = () => {
     setIsReady(true);
@@ -34,30 +82,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, hideControls }) => {
   };
 
   const handlePlay = () => {
-    console.log(
-      "User played video at time: ",
-      player.current?.getCurrentTime()
-    );
+    sendMessage(ws, "pause", "false");
   };
 
   const handlePause = () => {
-    console.log(
-      "User paused video at time: ",
-      player.current?.getCurrentTime()
-    );
+    sendMessage(ws, "pause", "true");
   };
 
   const handleBuffer = () => {
     console.log("Video buffered");
   };
 
-  const handleProgress = (state: {
-    played: number;
-    playedSeconds: number;
-    loaded: number;
-    loadedSeconds: number;
-  }) => {
-    console.log("Video progress: ", state);
+  const handleProgress = (state: State) => {
+    if (prevPlayerState.current) {
+      const diff = Math.abs(
+        state.playedSeconds - prevPlayerState.current?.playedSeconds
+      );
+
+      // !! Find better way to do this
+      if (diff > 0.2) {
+        console.log("HERE");
+        sendMessage(ws, "seek", state.playedSeconds.toString());
+      }
+    }
+    prevPlayerState.current = state;
   };
 
   return (
@@ -78,8 +126,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, hideControls }) => {
         <ReactPlayer
           ref={player}
           url={url}
-          playing={hasJoined}
+          playing={isPlaying}
           controls={!hideControls}
+          progressInterval={100}
           onReady={handleReady}
           onEnded={handleEnd}
           onSeek={handleSeek}
@@ -99,7 +148,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, hideControls }) => {
         <Button
           variant="contained"
           size="large"
-          onClick={() => setHasJoined(true)}
+          onClick={() => {
+            setHasJoined(true);
+            setIsPlaying(true);
+            const currTime = player.current?.getCurrentTime().toString();
+            if (currTime) {
+              sendMessage(ws, "seek", currTime);
+            }
+          }}
         >
           Watch Session
         </Button>
