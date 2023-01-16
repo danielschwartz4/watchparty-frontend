@@ -3,21 +3,36 @@ import VideoPlayer from "../components/VideoPlayer";
 import { useParams } from "react-router-dom";
 import { Box, Button, TextField, Tooltip, Typography } from "@mui/material";
 import LinkIcon from "@mui/icons-material/Link";
+import { CURRENT_BROWSER_URL, CURRENT_URL } from "../constants";
+import { EventType, SessionType } from "../types";
+import { VideoReplayer } from "../components/VideoReplayer";
 
 const ReplaySession: React.FC = () => {
   const { sessionId } = useParams();
   const [url, setUrl] = useState<string | null>(null);
-
   const [linkCopied, setLinkCopied] = useState(false);
+  const [session, setSession] = useState<SessionType>();
+  const [events, setEvents] = useState<EventType[]>();
 
   useEffect(() => {
-    // load video by session ID -- right now we just hardcode a constant video but you should be able to load the video associated with the session
-    setUrl("https://www.youtube.com/watch?v=NX1eKLReSpY");
+    // Fetch session to get current video
+    fetch(`${CURRENT_URL}/session/get/${sessionId}`)
+      .then((res) => res.json())
+      .then((res: { session: SessionType }) => {
+        setUrl(res.session.currentVideoUrl);
+        setSession(res.session);
+      });
 
-    // if session ID doesn't exist, you'll probably want to redirect back to the home / create session page
+    // !! Need event for when all users leave the session
+    // Fetch events
+    fetch(`${CURRENT_URL}/event/getSessionEvents/${sessionId}`)
+      .then((res) => res.json())
+      .then((res: { event: EventType[] }) => {
+        setEvents(res.event);
+      });
   }, [sessionId]);
 
-  if (!!url) {
+  if (!!url && sessionId) {
     return (
       <>
         <Box
@@ -55,12 +70,21 @@ const ReplaySession: React.FC = () => {
             </Button>
           </Tooltip>
         </Box>
-        {/* <VideoPlayer url={url} hideControls /> */}
+        {events ? (
+          <VideoReplayer url={url} hideControls events={events} />
+        ) : (
+          <Box>This session hasn't started yet!</Box>
+        )}
       </>
     );
   }
 
-  return null;
+  return (
+    <Box>
+      Not a valid session. Create one{" "}
+      <a href={`${CURRENT_BROWSER_URL}/create`}>here</a>!
+    </Box>
+  );
 };
 
 export default ReplaySession;

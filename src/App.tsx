@@ -1,4 +1,5 @@
 import { Box, createTheme, CssBaseline, ThemeProvider } from "@mui/material";
+import { useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import CreateSession from "./routes/CreateSession";
 import ReplaySession from "./routes/ReplaySession";
@@ -12,6 +13,9 @@ const darkTheme = createTheme({
 });
 
 const App = () => {
+  // const [url, setUrl] = useState("");
+  // console.log("APP url", url);
+
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />

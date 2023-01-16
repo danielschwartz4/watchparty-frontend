@@ -1,33 +1,59 @@
 import { useEffect, useState } from "react";
 import VideoPlayer from "../components/VideoPlayer";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Box, Button, TextField, Tooltip } from "@mui/material";
 import LinkIcon from "@mui/icons-material/Link";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
 import { sendMessage } from "../utils";
+import { CURRENT_BROWSER_URL, CURRENT_URL } from "../constants";
+import { SessionType, UserType } from "../types";
 
-const WatchSession: React.FC = () => {
+interface WatchSessionProps {}
+
+const WatchSession: React.FC<WatchSessionProps> = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [url, setUrl] = useState<string | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [newUrl, setNewUrl] = useState<string | null>(null);
-
   const [linkCopied, setLinkCopied] = useState(false);
+  const [user, setUser] = useState<UserType>();
 
   useEffect(() => {
-    // load video by session ID -- right now we just hardcode a constant video but you should be able to load the video associated with the session
-    setUrl("https://www.youtube.com/watch?v=NX1eKLReSpY");
-    setNewUrl("https://www.youtube.com/watch?v=NX1eKLReSpY");
+    // Create user
+    const params: UserType = {
+      name: "none",
+      sessionId: sessionId as string,
+    };
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    };
+    fetch(`${CURRENT_URL}/user/create`, options)
+      .then((res) => res.json())
+      .then((res: { user: UserType }) => {
+        setUser(res.user);
+      });
+
+    // Fetch session to get current video
+    fetch(`${CURRENT_URL}/session/get/${sessionId}`)
+      .then((res) => res.json())
+      .then((res: { session: SessionType }) => {
+        console.log("RES", res);
+        console.log("res.session.currentVideoUrl", res.session.currentVideoUrl);
+        setUrl(res.session.currentVideoUrl);
+        setNewUrl(res.session.currentVideoUrl);
+      });
     const newWs = new WebSocket(`ws://localhost:8080/watch/${sessionId}`);
-
     setWs(newWs);
-
     // if session ID doesn't exist, you'll probably want to redirect back to the home / create session page
   }, [sessionId]);
 
-  if (!!url) {
+  if (!!url && sessionId) {
     return (
       <>
         <Box
@@ -50,8 +76,8 @@ const WatchSession: React.FC = () => {
             </Box>
             <Button
               onClick={() => {
-                setUrl(newUrl);
                 if (newUrl) {
+                  setUrl(newUrl);
                   sendMessage(ws, "url-change", newUrl);
                 }
               }}
@@ -100,14 +126,20 @@ const WatchSession: React.FC = () => {
           ws={ws}
           url={url}
           setUrl={setUrl}
-          newUrl={newUrl}
           setNewUrl={setNewUrl}
+          sessionId={sessionId}
+          user={user}
         />
       </>
     );
   }
 
-  return null;
+  return (
+    <Box>
+      Not a valid session. Create one{" "}
+      <a href={`${CURRENT_BROWSER_URL}/create`}>here</a>!
+    </Box>
+  );
 };
 
 export default WatchSession;

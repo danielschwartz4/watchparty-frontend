@@ -2,15 +2,38 @@ import { Box, Button, TextField } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import { CURRENT_URL } from "../constants";
+import { SessionType } from "../types";
 
-const CreateSession: React.FC = () => {
+interface CreateSessionProps {}
+
+const CreateSession: React.FC<CreateSessionProps> = () => {
   const navigate = useNavigate();
-  const [newUrl, setNewUrl] = useState("");
+  const [url, setUrl] = useState("");
 
   const createSession = async () => {
-    setNewUrl("");
+    setUrl("");
     const sessionId = uuidv4();
-    navigate(`/watch/${sessionId}`);
+    // Add session to database
+    const params: SessionType = {
+      sessionId: sessionId,
+      elapsedTime: 0,
+      startVideoUrl: url,
+      currentVideoUrl: url,
+    };
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    };
+    await fetch(`${CURRENT_URL}/session/create`, options);
+
+    navigate(
+      `/watch/${sessionId}`
+      // , { state: { url: url } }
+    );
   };
 
   return (
@@ -18,12 +41,12 @@ const CreateSession: React.FC = () => {
       <TextField
         label="Youtube URL"
         variant="outlined"
-        value={newUrl}
-        onChange={(e) => setNewUrl(e.target.value)}
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
         fullWidth
       />
       <Button
-        disabled={!newUrl}
+        disabled={!url}
         onClick={createSession}
         size="small"
         variant="contained"

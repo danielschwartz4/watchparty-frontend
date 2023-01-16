@@ -9,3 +9,32 @@ export type MessagePayload = {
   message: string;
   type: string;
 };
+
+export interface UserType {
+  _id?: string;
+  name: string;
+  sessionId: string;
+}
+
+export interface SessionType {
+  _id?: string;
+  sessionId: string;
+  elapsedTime: number;
+  startVideoUrl: string;
+  currentVideoUrl: string;
+}
+
+// ? 3. Do replay for pause and play only
+
+export interface EventType {
+  _id?: string;
+  userId: string;
+  sessionId: string;
+  type: "Pause" | "Play" | "Seek" | "Switch";
+  sessionIncrement: number;
+  timeStamp: number;
+  globalTimeStamp?: Date;
+  seekToTimeStamp?: number;
+  pauseTimeElapsed?: number;
+  newVideoUrl?: string;
+}

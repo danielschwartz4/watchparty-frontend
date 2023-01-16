@@ -1,25 +1,28 @@
 import { Box, Button } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import ReactPlayer from "react-player";
-import { MessagePayload, State } from "../types";
+import { CURRENT_URL } from "../constants";
+import { EventType, MessagePayload, State, UserType } from "../types";
 import { sendMessage } from "../utils";
 
 interface VideoPlayerProps {
   ws: WebSocket | null;
   url: string;
+  sessionId: string;
   setUrl?: React.Dispatch<React.SetStateAction<string | null>>;
-  newUrl?: string | null;
   setNewUrl?: React.Dispatch<React.SetStateAction<string | null>>;
   hideControls?: boolean;
+  user: UserType | undefined;
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
   ws,
   url,
   setUrl,
-  newUrl,
   setNewUrl,
   hideControls,
+  sessionId,
+  user,
 }) => {
   const [hasJoined, setHasJoined] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -35,15 +38,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         break;
 
       case "pause":
+        // !! Don't pause on pause seek to the paused time
         setIsPlaying(data.message === "false");
         break;
 
       case "url-change":
-        console.log("new url", data.message);
-        if (setUrl && newUrl && setNewUrl) {
+        if (setUrl && setNewUrl) {
           setUrl(data.message);
           setNewUrl(data.message);
         }
+        const params = { currentVideoUrl: data.message };
+        const options = {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(params),
+        };
+        fetch(`${CURRENT_URL}/session/update/${sessionId}`, options);
         break;
     }
   }
@@ -60,6 +72,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [ws]);
 
+  console.log("URL", url);
+
   const handleReady = () => {
     setIsReady(true);
   };
@@ -68,24 +82,41 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     console.log("Video ended");
   };
 
-  const handleSeek = (seconds: number) => {
-    // Ideally, the seek event would be fired whenever the user moves the built in Youtube video slider to a new timestamp.
-    // However, the youtube API no longer supports seek events (https://github.com/cookpete/react-player/issues/356), so this no longer works
-
-    // You'll need to find a different way to detect seeks (or just write your own seek slider and replace the built in Youtube one.)
-    // Note that when you move the slider, you still get play, pause, buffer, and progress events, can you use those?
-
-    console.log(
-      "This never prints because seek decetion doesn't work: ",
-      seconds
-    );
-  };
-
   const handlePlay = () => {
+    const params: EventType = {
+      userId: user?._id as string,
+      sessionId: sessionId,
+      type: "Play",
+      sessionIncrement: 1,
+      timeStamp: player.current?.getCurrentTime() as number,
+    };
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    };
+    fetch(`${CURRENT_URL}/event/create`, options);
     sendMessage(ws, "pause", "false");
   };
 
   const handlePause = () => {
+    const params: EventType = {
+      userId: user?._id as string,
+      sessionId: sessionId,
+      type: "Pause",
+      sessionIncrement: 1,
+      timeStamp: player.current?.getCurrentTime() as number,
+    };
+    const options = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    };
+    fetch(`${CURRENT_URL}/event/create`, options);
     sendMessage(ws, "pause", "true");
   };
 
@@ -98,7 +129,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       const diff = Math.abs(
         state.playedSeconds - prevPlayerState.current?.playedSeconds
       );
-
       // !! Find better way to do this
       if (diff > 0.2) {
         console.log("HERE");
@@ -131,7 +161,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           progressInterval={100}
           onReady={handleReady}
           onEnded={handleEnd}
-          onSeek={handleSeek}
           onPlay={handlePlay}
           onPause={handlePause}
           onBuffer={handleBuffer}
