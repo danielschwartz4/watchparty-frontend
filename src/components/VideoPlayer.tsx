@@ -131,8 +131,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       );
       // !! Find better way to do this
       if (diff > 0.2) {
-        console.log("HERE");
-        sendMessage(ws, "seek", state.playedSeconds.toString());
+        const seekToTimeStamp = state.playedSeconds;
+        const params: EventType = {
+          userId: user?._id as string,
+          sessionId: sessionId,
+          type: "Seek",
+          sessionIncrement: 1,
+          timeStamp: player.current?.getCurrentTime() as number,
+          seekToTimeStamp: seekToTimeStamp,
+        };
+        const options = {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(params),
+        };
+        fetch(`${CURRENT_URL}/event/create`, options);
+        sendMessage(ws, "seek", seekToTimeStamp.toString());
       }
     }
     prevPlayerState.current = state;

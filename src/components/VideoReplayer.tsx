@@ -35,10 +35,17 @@ export const VideoReplayer: React.FC<VideoReplayerProps> = ({
         while (eventStack) {
           const currEvent = eventStack.shift();
           const nextEvent = eventStack[0];
+
           if (currEvent && currEvent.type === "Play") {
             setIsPlaying(true);
           } else if (currEvent && currEvent.type === "Pause") {
             setIsPlaying(false);
+          } else if (
+            currEvent &&
+            currEvent.seekToTimeStamp &&
+            currEvent.type === "Seek"
+          ) {
+            player.current?.seekTo(currEvent.seekToTimeStamp);
           }
           if (currEvent?.globalTimeStamp && nextEvent.globalTimeStamp) {
             const timeElapsed =
