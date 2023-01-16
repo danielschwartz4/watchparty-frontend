@@ -6,12 +6,14 @@ import { EventType } from "../types";
 
 interface VideoReplayerProps {
   url: string;
+  setUrl: React.Dispatch<React.SetStateAction<string | null>>;
   hideControls: boolean;
   events: EventType[];
 }
 
 export const VideoReplayer: React.FC<VideoReplayerProps> = ({
   url,
+  setUrl,
   hideControls,
   events,
 }) => {
@@ -20,8 +22,6 @@ export const VideoReplayer: React.FC<VideoReplayerProps> = ({
   const [isReady, setIsReady] = useState(false);
   const [eventStack, setEventStack] = useState<EventType[]>();
   const player = useRef<ReactPlayer>(null);
-
-  console.log("EVENTS", events);
 
   useEffect(() => {
     setEventStack(events);
@@ -46,6 +46,12 @@ export const VideoReplayer: React.FC<VideoReplayerProps> = ({
             currEvent.type === "Seek"
           ) {
             player.current?.seekTo(currEvent.seekToTimeStamp);
+          } else if (
+            currEvent &&
+            currEvent.newVideoUrl &&
+            currEvent.type === "Switch"
+          ) {
+            setUrl(currEvent.newVideoUrl);
           }
           if (currEvent?.globalTimeStamp && nextEvent.globalTimeStamp) {
             const timeElapsed =

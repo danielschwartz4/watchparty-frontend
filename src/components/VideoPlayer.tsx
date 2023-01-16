@@ -47,15 +47,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           setUrl(data.message);
           setNewUrl(data.message);
         }
-        const params = { currentVideoUrl: data.message };
-        const options = {
+
+        // Update session with current video
+        const sessionParams = { currentVideoUrl: data.message };
+        const sessionOptions = {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(params),
+          body: JSON.stringify(sessionParams),
         };
-        fetch(`${CURRENT_URL}/session/update/${sessionId}`, options);
+        fetch(`${CURRENT_URL}/session/update/${sessionId}`, sessionOptions);
         break;
     }
   }
@@ -71,8 +73,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       };
     }
   }, [ws]);
-
-  console.log("URL", url);
 
   const handleReady = () => {
     setIsReady(true);

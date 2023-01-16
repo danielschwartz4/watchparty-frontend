@@ -71,7 +71,12 @@ const ReplaySession: React.FC = () => {
           </Tooltip>
         </Box>
         {events ? (
-          <VideoReplayer url={url} hideControls events={events} />
+          <VideoReplayer
+            url={url}
+            setUrl={setUrl}
+            hideControls
+            events={events}
+          />
         ) : (
           <Box>This session hasn't started yet!</Box>
         )}

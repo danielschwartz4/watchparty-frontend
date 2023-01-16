@@ -32,8 +32,8 @@ export interface EventType {
   sessionId: string;
   type: "Pause" | "Play" | "Seek" | "Switch";
   sessionIncrement: number;
-  timeStamp: number;
   globalTimeStamp?: Date;
+  timeStamp?: number;
   seekToTimeStamp?: number;
   pauseTimeElapsed?: number;
   newVideoUrl?: string;

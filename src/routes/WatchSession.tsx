@@ -7,7 +7,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
 import { sendMessage } from "../utils";
 import { CURRENT_BROWSER_URL, CURRENT_URL } from "../constants";
-import { SessionType, UserType } from "../types";
+import { EventType, SessionType, UserType } from "../types";
 
 interface WatchSessionProps {}
 
@@ -78,6 +78,21 @@ const WatchSession: React.FC<WatchSessionProps> = () => {
               onClick={() => {
                 if (newUrl) {
                   setUrl(newUrl);
+                  const eventParams: EventType = {
+                    userId: user?._id as string,
+                    sessionId: sessionId,
+                    type: "Switch",
+                    sessionIncrement: 1,
+                    newVideoUrl: newUrl,
+                  };
+                  const eventOptions = {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(eventParams),
+                  };
+                  fetch(`${CURRENT_URL}/event/create`, eventOptions);
                   sendMessage(ws, "url-change", newUrl);
                 }
               }}
